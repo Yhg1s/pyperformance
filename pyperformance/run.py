@@ -79,11 +79,13 @@ def run_benchmarks(should_run, python, options):
     runid = get_run_id(info)
 
     unique = getattr(options, "unique_venvs", False)
+    trust_venv = getattr(options, "trust_venv", False)
     if not unique:
         common = VenvForBenchmarks.ensure(
             _venv.get_venv_root(runid.name, python=info),
             info,
-            upgrade="oncreate",
+            upgrade="oncreate" if not trust_venv else None,
+            skip_pip=trust_venv,
             inherit_environ=options.inherit_environ,
         )
 
@@ -96,9 +98,16 @@ def run_benchmarks(should_run, python, options):
         venv_root = _venv.get_venv_root(name, python=info)
         print()
         print("=" * 50)
-        print(f"({i + 1:>2}/{len(to_run)}) creating venv for benchmark ({bench.name})")
+        if trust_venv:
+            print(f"({i + 1:>2}/{len(to_run)}) using existing venv for benchmark ({bench.name})")
+        else:
+            print(f"({i + 1:>2}/{len(to_run)}) creating venv for benchmark ({bench.name})")
         print()
         if not unique:
+            if trust_venv:
+                # Trust the venv is already set up correctly
+                benchmarks[bench] = (common, bench_runid)
+                continue
             print("(trying common venv first)")
             # Try the common venv first.
             try:
@@ -112,11 +121,13 @@ def run_benchmarks(should_run, python, options):
             venv = VenvForBenchmarks.ensure(
                 venv_root,
                 info,
-                upgrade="oncreate",
+                upgrade="oncreate" if not trust_venv else None,
+                skip_pip=trust_venv,
                 inherit_environ=options.inherit_environ,
             )
-            # XXX Do not override when there is a requirements collision.
-            venv.ensure_reqs(bench)
+            if not trust_venv:
+                # XXX Do not override when there is a requirements collision.
+                venv.ensure_reqs(bench)
         except _venv.RequirementsInstallationFailedError:
             print("(benchmark will be skipped)")
             print()

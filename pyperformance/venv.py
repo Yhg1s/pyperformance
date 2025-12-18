@@ -178,7 +178,7 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
 
     @classmethod
     def ensure(
-        cls, root, python=None, *, inherit_environ=None, upgrade=False, **kwargs
+        cls, root, python=None, *, inherit_environ=None, upgrade=False, skip_pip=False, **kwargs
     ):
         exists = _venv.venv_exists(root)
         if upgrade == "oncreate":
@@ -191,7 +191,10 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
         if exists:
             self = super().ensure(root)
             self.inherit_environ = inherit_environ
-            if upgrade:
+            if skip_pip:
+                # Trust that pip is already installed correctly
+                pass
+            elif upgrade:
                 self.upgrade_pip()
             else:
                 self.ensure_pip(upgrade=False)
