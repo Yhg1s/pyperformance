@@ -18,10 +18,13 @@ stop: asyncio.Event
 
 
 async def handler(websocket) -> None:
-    for _ in range(100):
-        await websocket.recv()
-
-    stop.set()
+    # Signal from a finally block: if recv() raises (e.g. the peer went away
+    # early) the main coroutine would otherwise wait on `stop` forever.
+    try:
+        for _ in range(100):
+            await websocket.recv()
+    finally:
+        stop.set()
 
 
 async def send(ws):
