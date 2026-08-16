@@ -129,6 +129,15 @@ def parse_args():
         ".json file from a previous run.",
     )
     cmd.add_argument(
+        "--loops-table",
+        metavar="FILENAME",
+        help="Take the number of loops for each benchmark from FILENAME "
+        "instead of calibrating it on every run (see `pyperf loops_table`). "
+        "The same table always gives the same loop counts, so the count "
+        "stops being a source of run-to-run variance. Benchmarks the table "
+        "does not list are calibrated as usual.",
+    )
+    cmd.add_argument(
         "--timeout",
         help="Specify a timeout in seconds for a single "
         "benchmark run (default: disabled)",
