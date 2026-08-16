@@ -198,7 +198,8 @@ retains the layout & logic from the original. (Ugh.)
 django_template
 ---------------
 
-Use the Django template system to build a 150x150-cell HTML table.
+Use the Django template system to build a 100x100-cell HTML table. The table
+size can be changed with the ``--table-size`` command line option.
 
 Use ``Context`` and ``Template`` classes of the ``django.template`` module.
 

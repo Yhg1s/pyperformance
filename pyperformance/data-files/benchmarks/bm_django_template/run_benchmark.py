@@ -1,6 +1,6 @@
 """Test the performance of the Django template system.
 
-This will have Django generate a 150x150-cell HTML table.
+This will have Django generate a 100x100-cell HTML table.
 """
 
 import pyperf
@@ -26,8 +26,8 @@ def bench_django_template(runner, size):
     runner.bench_func('django_template', template.render, context)
 
 
-def prepare_cmd(runner, cmd):
-    cmd.append("--table-size=%s" % runner.args.table_size)
+def prepare_cmd(cmd, args):
+    cmd.append("--table-size=%s" % args.table_size)
 
 
 if __name__ == "__main__":
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     }])
     django.setup()
 
-    runner = pyperf.Runner()
+    runner = pyperf.Runner(add_cmdline_args=prepare_cmd)
     cmd = runner.argparser
     cmd.add_argument("--table-size",
                      type=int, default=DEFAULT_SIZE,
