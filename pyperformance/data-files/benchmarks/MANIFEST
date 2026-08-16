@@ -1,11 +1,40 @@
 [benchmarks]
 
+# The name in this file is the benchmark's identity: it is what you select on
+# the command line and what pyperformance reports it as. It must match the name
+# the benchmark's run_benchmark.py passes to runner.bench_*(), or results
+# cannot be attributed back to the benchmark that produced them.
+#
+# Nine benchmarks report SEVERAL rows from one run, so their MANIFEST name is
+# necessarily not a result name. Anything joining results to this file needs
+# the mapping:
+#
+#   base64          -> base64_small, base64_large, urlsafe_base64_small,
+#                      base32_small, base32_large, base16_small, base16_large,
+#                      ascii85_small, ascii85_large, base85_small, base85_large
+#   scimark         -> scimark_{fft,lu,monte_carlo,sor,sparse_mat_mult}
+#   sympy           -> sympy_{expand,integrate,sum,str}
+#   xml_etree       -> xml_etree_{parse,iterparse,generate,process}
+#                      (xml_etree_pure_python_* with --no-accelerator)
+#   deepcopy        -> deepcopy, deepcopy_reduce, deepcopy_memo
+#   logging         -> logging_{silent,simple,format}
+#   genshi          -> genshi_{xml,text}
+#   pprint          -> pprint_{safe_repr,pformat}
+#   concurrent_imap -> concurrent_imap_{mp_pool,thread_pool}
+#
+# Every other entry reports exactly one row, under the name given here.
+#
+# Two benchmark directories are deliberately not listed, because neither can
+# be installed from a plain checkout: bm_hg_startup needs mercurial and
+# bm_yaml needs PyYAML. Their code is kept but they are unreachable until
+# someone registers them; they would report "hg_startup" and "yaml".
+
 name	metafile
 2to3	<local>
-argparse	<local>
+argparse_many_optionals	<local:argparse>
 argparse_subparsers	<local:argparse>
 async_generators	<local>
-async_tree	<local>
+async_tree_none	<local:async_tree>
 async_tree_cpu_io_mixed	<local:async_tree>
 async_tree_io	<local:async_tree>
 async_tree_memoization	<local:async_tree>
@@ -13,7 +42,7 @@ async_tree_eager	<local:async_tree>
 async_tree_eager_cpu_io_mixed	<local:async_tree>
 async_tree_eager_io	<local:async_tree>
 async_tree_eager_memoization	<local:async_tree>
-async_tree_tg	<local:async_tree>
+async_tree_none_tg	<local:async_tree>
 async_tree_cpu_io_mixed_tg	<local:async_tree>
 async_tree_io_tg	<local:async_tree>
 async_tree_memoization_tg	<local:async_tree>
@@ -32,12 +61,14 @@ concurrent_imap	<local>
 coroutines	<local>
 coverage	<local>
 gc_traversal	<local>
-gc_collect	<local>
+create_gc_cycles	<local:gc_collect>
 generators	<local>
 chameleon	<local>
 chaos	<local>
 comprehensions	<local>
 crypto_pyaes	<local>
+decimal_factorial	<local>
+decimal_pi	<local>
 dask	<local>
 deepcopy	<local>
 deltablue	<local>
@@ -45,7 +76,7 @@ django_template	<local>
 dulwich_log	<local>
 docutils	<local>
 fannkuch	<local>
-fastapi	<local>
+fastapi_http	<local:fastapi>
 float	<local>
 genshi	<local>
 go	<local>
@@ -60,7 +91,7 @@ logging	<local>
 mako	<local>
 mdp	<local>
 meteor_contest	<local>
-networkx	<local>
+networkx_shortest_path	<local:networkx>
 networkx_connected_components	<local:networkx>
 networkx_k_core	<local:networkx>
 nbody	<local>
@@ -73,6 +104,7 @@ pickle_pure_python	<local:pickle>
 pidigits	<local>
 pprint	<local>
 pyflate	<local>
+quadtree_nbody	<local:barnes_hut>
 python_startup	<local>
 python_startup_no_site	<local:python_startup>
 raytrace	<local>
@@ -87,7 +119,7 @@ spectral_norm	<local>
 sphinx	<local>
 sqlalchemy_declarative	<local>
 sqlalchemy_imperative	<local>
-sqlglot_v2	<local>
+sqlglot_v2_normalize	<local:sqlglot_v2>
 sqlglot_v2_parse	<local:sqlglot_v2>
 sqlglot_v2_transpile	<local:sqlglot_v2>
 sqlglot_v2_optimize	<local:sqlglot_v2>
@@ -102,7 +134,7 @@ unpack_sequence	<local>
 unpickle	<local:pickle>
 unpickle_list	<local:pickle>
 unpickle_pure_python	<local:pickle>
-xdsl	<local>
+xdsl_constant_fold	<local:xdsl>
 xml_etree	<local>
 
 

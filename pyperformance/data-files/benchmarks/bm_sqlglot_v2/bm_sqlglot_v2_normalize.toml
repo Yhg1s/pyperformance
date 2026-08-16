@@ -1,0 +1,6 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "sqlglot_v2_normalize"
+extra_opts = ["normalize"]

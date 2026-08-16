@@ -1,0 +1,6 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "networkx_shortest_path"
+extra_opts = ["shortest_path"]

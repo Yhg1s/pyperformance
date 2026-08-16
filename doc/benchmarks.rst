@@ -64,7 +64,7 @@ Async workload benchmark, which calls ``asyncio.gather()`` on a tree (6 levels d
 6 branches per level) with the leaf nodes simulating some [potentially] async work
 (depending on the benchmark variant). Available variants:
 
-* ``async_tree``: no actual async work at any leaf node.
+* ``async_tree_none``: no actual async work at any leaf node.
 * ``async_tree_io``: all leaf nodes simulate async IO workload (async sleep 50ms).
 * ``async_tree_memoization``: all leaf nodes simulate async IO workload with 90% of
   the data memoized.
