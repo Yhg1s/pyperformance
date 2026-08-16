@@ -123,12 +123,6 @@ def parse_args():
         "value, used to calibrate the number of loops",
     )
     cmd.add_argument(
-        "--same-loops",
-        help="Use the same number of loops as a previous run "
-        "(i.e., don't recalibrate). Should be a path to a "
-        ".json file from a previous run.",
-    )
-    cmd.add_argument(
         "--timeout",
         help="Specify a timeout in seconds for a single "
         "benchmark run (default: disabled)",

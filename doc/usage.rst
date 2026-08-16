@@ -143,10 +143,6 @@ options::
   -p PYTHON, --python PYTHON
                         Python executable (default: use running
                         Python)
-  --same-loops SAME_LOOPS
-                        Use the same number of loops as a previous run
-                        (i.e., don't recalibrate). Should be a path to a
-                        .json file from a previous run.
   --hook HOOK
                         Apply the given pyperf hook when running the
                         benchmarks.
