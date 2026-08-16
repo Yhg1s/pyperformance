@@ -42,11 +42,15 @@ async def main(use_ssl: bool) -> None:
         server_context = None
         client_context = None
 
-    server = await asyncio.start_server(handle_echo, '127.0.0.1', 8882, ssl=server_context)
+    # Bind port 0 so the kernel picks a free port, then read it back. A
+    # hardcoded port makes the benchmark fail outright if anything else on the
+    # machine (including a second copy of this benchmark) already holds it.
+    server = await asyncio.start_server(handle_echo, '127.0.0.1', 0, ssl=server_context)
+    port = server.sockets[0].getsockname()[1]
 
     async with server:
         asyncio.create_task(server.start_serving())
-        reader, writer = await asyncio.open_connection('127.0.0.1', 8882, ssl=client_context)
+        reader, writer = await asyncio.open_connection('127.0.0.1', port, ssl=client_context)
         data_len = 0
         while True:
             data = await reader.read(CHUNK_SIZE)
