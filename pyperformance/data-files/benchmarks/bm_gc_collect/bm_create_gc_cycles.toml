@@ -1,0 +1,5 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "create_gc_cycles"

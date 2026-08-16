@@ -1,0 +1,5 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "xdsl_constant_fold"

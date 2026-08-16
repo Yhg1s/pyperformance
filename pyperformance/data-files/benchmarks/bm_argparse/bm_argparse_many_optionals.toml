@@ -1,0 +1,6 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "argparse_many_optionals"
+extra_opts = ["many_optionals"]
