@@ -1,0 +1,7 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "thread_accumulate_optimized"
+tags = "threads"
+extra_opts = ["thread_accumulate_optimized"]

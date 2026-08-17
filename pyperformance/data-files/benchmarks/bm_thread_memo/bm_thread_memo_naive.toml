@@ -1,0 +1,7 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "thread_memo_naive"
+tags = "threads"
+extra_opts = ["thread_memo_naive"]
