@@ -1,6 +1,7 @@
 [benchmarks]
 
 name	metafile
+noop	<local>
 2to3	<local>
 argparse	<local>
 argparse_subparsers	<local:argparse>
