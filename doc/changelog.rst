@@ -3,6 +3,10 @@ Changelog
 
 Version 1.14.0
 --------------
+* Remove the ``--same-loops`` option. It could only pass a single ``--loops``
+  to a benchmark process, so it never worked for the scripts that report
+  several benchmarks, and for ``deepcopy`` it silently applied one row's loop
+  count to all three.
 * Bump ``pyperf`` to 2.10.0
 * Add base64 module benchmark (b64, b32, b16, a85, b85)
 * Add FastAPI HTTP benchmark

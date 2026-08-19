@@ -570,8 +570,6 @@ class BenchmarkRevision(Application):
             cmd.extend(("--affinity", self.conf.affinity))
         if self.conf.debug:
             cmd.append("--debug-single-value")
-        if self.conf.same_loops:
-            cmd.append("--same-loops=%s" % self.conf.same_loops)
         if self.conf.rigorous:
             cmd.append("--rigorous")
         exitcode = self.run_nocheck(*cmd)
@@ -846,7 +844,6 @@ def parse_config(filename, command):
         conf.benchmarks = getstr("run_benchmark", "benchmarks", default="")
         conf.affinity = getstr("run_benchmark", "affinity", default="")
         conf.upload = getboolean("run_benchmark", "upload", False)
-        conf.same_loops = getfile("run_benchmark", "same_loops", default="")
         conf.rigorous = getboolean("run_benchmark", "rigorous", False)
 
         # paths

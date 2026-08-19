@@ -1,5 +1,4 @@
 import hashlib
-import json
 import os
 import sys
 import time
@@ -51,28 +50,7 @@ def get_run_id(python, bench=None):
     return RunID(py_id, compat_id, bench, ts)
 
 
-def get_loops_from_file(filename):
-    with open(filename) as fd:
-        data = json.load(fd)
-
-    loops = {}
-    for benchmark in data["benchmarks"]:
-        metadata = benchmark.get("metadata", data["metadata"])
-        name = metadata["name"]
-        if name.endswith("_none"):
-            name = name[: -len("_none")]
-        if "loops" in metadata:
-            loops[name] = metadata["loops"]
-
-    return loops
-
-
 def run_benchmarks(should_run, python, options):
-    if options.same_loops is not None:
-        loops = get_loops_from_file(options.same_loops)
-    else:
-        loops = {}
-
     to_run = sorted(should_run)
 
     info = _pythoninfo.get_info(python)
@@ -168,11 +146,6 @@ def run_benchmarks(should_run, python, options):
 
             return dest_suite
 
-        if name in loops:
-            pyperf_opts = [*base_pyperf_opts, f"--loops={loops[name]}"]
-        else:
-            pyperf_opts = base_pyperf_opts
-
         bench_venv, bench_runid = benchmarks.get(bench)
         if bench_venv is None:
             print("ERROR: Benchmark %s failed: could not install requirements" % name)
@@ -182,7 +155,7 @@ def run_benchmarks(should_run, python, options):
             result = bench.run(
                 bench_venv.python,
                 bench_runid,
-                pyperf_opts,
+                base_pyperf_opts,
                 venv=bench_venv,
                 verbose=options.verbose,
             )
