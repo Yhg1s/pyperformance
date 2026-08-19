@@ -123,6 +123,12 @@ def parse_args():
         "value, used to calibrate the number of loops",
     )
     cmd.add_argument(
+        "--loops-table",
+        metavar="FILENAME",
+        help="Take the number of loops for each benchmark function from "
+        "FILENAME instead of calibrating (see `pyperf loops_table`).",
+    )
+    cmd.add_argument(
         "--timeout",
         help="Specify a timeout in seconds for a single "
         "benchmark run (default: disabled)",

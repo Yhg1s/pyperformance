@@ -228,6 +228,10 @@ def get_pyperf_opts(options):
         opts.append("--min-time=%s" % options.min_time)
     if options.timeout:
         opts.append("--timeout=%s" % options.timeout)
+    if getattr(options, "loops_table", None):
+        # Absolute: each benchmark runs from its own directory, so a path
+        # relative to where pyperformance was invoked would not resolve.
+        opts.append("--loops-table=%s" % os.path.abspath(options.loops_table))
     if options.hook:
         for hook in options.hook:
             opts.append("--hook=%s" % hook)
