@@ -148,6 +148,11 @@ def parse_args():
         default=None,
         help="number of skipped values per run used to warmup the benchmark",
     )
+    cmd.add_argument(
+        "--trust-venv",
+        action="store_true",
+        help="Trust that the venv is already correctly set up; skip pip install operations",
+    )
     filter_opts(cmd)
 
     # show
