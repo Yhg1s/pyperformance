@@ -6,4 +6,4 @@ urls = {repository = "https://github.com/python/pyperformance"}
 dynamic = ["version"]
 
 [tool.pyperformance]
-name = "gc_collect"
+name = "create_gc_cycles"

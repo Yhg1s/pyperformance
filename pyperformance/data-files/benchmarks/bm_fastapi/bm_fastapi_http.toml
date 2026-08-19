@@ -1,0 +1,5 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "fastapi_http"

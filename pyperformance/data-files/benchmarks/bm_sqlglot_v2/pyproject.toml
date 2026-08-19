@@ -9,5 +9,5 @@ urls = {repository = "https://github.com/python/pyperformance"}
 dynamic = ["version"]
 
 [tool.pyperformance]
-name = "sqlglot_v2"
+name = "sqlglot_v2_normalize"
 extra_opts = ["normalize"]

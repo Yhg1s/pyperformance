@@ -1,0 +1,6 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "async_tree_none"
+extra_opts = ["none"]

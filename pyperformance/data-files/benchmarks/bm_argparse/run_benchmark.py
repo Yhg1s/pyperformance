@@ -122,4 +122,8 @@ if __name__ == "__main__":
     args = runner.parse_args()
     benchmark = args.benchmark
 
-    runner.bench_func(args.benchmark, BENCHMARKS[args.benchmark])
+    # Qualified with the benchmark it belongs to: "many_optionals" alone
+    # says nothing about what was measured, and the MANIFEST entry and this
+    # name have to agree for a result to be attributable to a benchmark.
+    runner.bench_func("argparse_" + args.benchmark,
+                      BENCHMARKS[args.benchmark])

@@ -347,6 +347,7 @@ def _select_benchmarks(raw, manifest):
 
     # Get the selections.
     selected = []
+    skipped = []
     this_python_version = ".".join(map(str, sys.version_info[:3]))
     for bench in _benchmark_selections.iter_selections(manifest, parsed_infos):
         if isinstance(bench, str):
@@ -355,6 +356,19 @@ def _select_benchmarks(raw, manifest):
         # Filter out any benchmarks that can't be run on the Python version we're running
         if this_python_version in bench.python:
             selected.append(bench)
+        else:
+            skipped.append((bench.name, str(bench.python)))
+
+    if skipped:
+        # Say so. Silently dropping these makes a suite look complete when it
+        # is not, and makes two runs on different Pythons look comparable when
+        # they cover different benchmarks.
+        logging.warning(
+            "skipping %s benchmark(s) that do not support Python %s: %s",
+            len(skipped),
+            this_python_version,
+            ", ".join(f"{name} (requires {spec})" for name, spec in sorted(skipped)),
+        )
 
     return selected
 

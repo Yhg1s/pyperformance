@@ -28,5 +28,9 @@ if __name__ == "__main__":
     count = 1000
     chunk = 10
     num_core = 2
-    runner.bench_func("bench_mp_pool", bench_mp_pool, num_core, count, chunk)
-    runner.bench_func("bench_thread_pool", bench_thread_pool, num_core, count, chunk)
+    # "bench_mp_pool" was the function's name leaking into the result: it
+    # named neither the benchmark nor what was measured.
+    runner.bench_func("concurrent_imap_mp_pool",
+                      bench_mp_pool, num_core, count, chunk)
+    runner.bench_func("concurrent_imap_thread_pool",
+                      bench_thread_pool, num_core, count, chunk)

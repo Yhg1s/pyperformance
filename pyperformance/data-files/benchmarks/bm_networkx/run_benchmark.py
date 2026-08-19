@@ -58,4 +58,6 @@ if __name__ == "__main__":
     args = runner.parse_args()
     benchmark = args.benchmark
 
-    runner.bench_func(args.benchmark, BENCHMARKS[args.benchmark])
+    # Qualified with the benchmark it belongs to; see bm_argparse.
+    runner.bench_func("networkx_" + args.benchmark,
+                      BENCHMARKS[args.benchmark])
