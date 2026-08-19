@@ -1,0 +1,7 @@
+[project]
+dynamic = ["version"]
+
+[tool.pyperformance]
+name = "thread_montecarlo_naive"
+tags = "threads"
+extra_opts = ["thread_montecarlo_naive"]
