@@ -232,6 +232,8 @@ def get_pyperf_opts(options):
         # Absolute: each benchmark runs from its own directory, so a path
         # relative to where pyperformance was invoked would not resolve.
         opts.append("--loops-table=%s" % os.path.abspath(options.loops_table))
+    if getattr(options, "no_calibrate", False):
+        opts.append("--no-calibrate")
     if options.hook:
         for hook in options.hook:
             opts.append("--hook=%s" % hook)

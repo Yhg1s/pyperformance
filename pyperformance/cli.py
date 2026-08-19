@@ -129,6 +129,12 @@ def parse_args():
         "FILENAME instead of calibrating (see `pyperf loops_table`).",
     )
     cmd.add_argument(
+        "--no-calibrate",
+        action="store_true",
+        help="Refuse to calibrate: every benchmark function must be in "
+        "--loops-table.",
+    )
+    cmd.add_argument(
         "--timeout",
         help="Specify a timeout in seconds for a single "
         "benchmark run (default: disabled)",
