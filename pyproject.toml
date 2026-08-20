@@ -64,7 +64,7 @@ classifiers = [
 dynamic = [ "version" ]
 dependencies = [
   "packaging",
-  "pyperf",
+  "pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf",
   "tomli; python_version<'3.11'",
 ]
 optional-dependencies.dev = [
