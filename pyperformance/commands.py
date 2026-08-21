@@ -198,6 +198,81 @@ def cmd_run(options, benchmarks):
         sys.exit(1)
 
 
+def cmd_loops_table(options, benchmarks):
+    import json
+
+    import pyperformance
+
+    from .run import calibrate_benchmarks
+
+    try:
+        from pyperf._loops_table import LoopsTable, build_table
+    except ImportError:
+        print(
+            "ERROR: the installed pyperf has no loops table support. "
+            "Loops tables need the pyperf version pyperformance pins; "
+            "reinstall pyperformance's requirements."
+        )
+        sys.exit(1)
+
+    logging.basicConfig(level=logging.INFO)
+
+    print("Python benchmark suite %s" % pyperformance.__version__)
+    print()
+
+    if hasattr(options, "python"):
+        executable = options.python
+    else:
+        executable = sys.executable
+    if not os.path.isabs(executable):
+        print('ERROR: "%s" is not an absolute path' % executable)
+        sys.exit(1)
+
+    existing = {}
+    if options.append and os.path.exists(options.output):
+        table = LoopsTable.load(options.output)
+        existing = table.loops
+        if table.min_time and table.min_time != options.min_time:
+            print(
+                "ERROR: %s was generated with --min-time %s, but this run uses"
+                " %s. Loop counts from the two are not comparable; write a new"
+                " table instead of appending."
+                % (options.output, table.min_time, options.min_time)
+            )
+            sys.exit(1)
+
+    loops, errors = calibrate_benchmarks(benchmarks, executable, options)
+
+    if not loops and not existing:
+        print("ERROR: No benchmark was calibrated")
+        sys.exit(1)
+
+    merged = {**existing, **loops}
+    data = build_table(merged, options.min_time)
+    with open(options.output, "w", encoding="utf-8") as fp:
+        json.dump(data, fp, indent=2, sort_keys=True)
+        fp.write("\n")
+
+    added = len(merged) - len(existing)
+    print("Wrote %s loop counts to %s (%s new)" % (len(merged), options.output, added))
+    print("Run with: pyperformance run --loops-table %s" % options.output)
+
+    if errors:
+        # The table is written anyway: on a long suite the counts that did work
+        # are worth keeping, and --append picks up where this left off. The
+        # exit code is what says not to trust it as complete.
+        print()
+        print("%s benchmarks failed:" % len(errors))
+        for name, reason in errors:
+            print("- %s (%s)" % (name, reason))
+        print()
+        print(
+            "WARNING: %s is missing those benchmarks, so `run --no-calibrate`"
+            " will fail on them." % options.output
+        )
+        sys.exit(1)
+
+
 def cmd_compile(options):
     from .compile import BenchmarkRevision, parse_config
 

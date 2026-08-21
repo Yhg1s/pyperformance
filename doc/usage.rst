@@ -79,6 +79,7 @@ Basic commands
 pyperformance actions::
 
     run                 Run benchmarks on the running python
+    loops_table         Calibrate benchmarks and record their loop counts
     show                Display a benchmark file
     compare             Compare two benchmark files
     list                List benchmarks of the running Python
@@ -150,6 +151,68 @@ options::
   --hook HOOK
                         Apply the given pyperf hook when running the
                         benchmarks.
+
+loops_table
+-----------
+
+Calibrate benchmarks once and record their loop counts, so that later runs can
+reuse them with ``run --loops-table`` instead of calibrating again.
+
+Normally every ``pyperformance run`` starts by calibrating: it works out how
+many iterations of each benchmark fit in ``--min-time``. That calibration is
+itself a measurement, so it varies from run to run, and two runs of the same
+benchmark can end up using different loop counts. Recording the counts once and
+reusing them takes that source of variation out of a comparison.
+
+Usage::
+
+  pyperformance loops_table -o FILENAME [-h] [--append] [--min-time MIN_TIME]
+                            [-v] [--affinity CPU_LIST] [--timeout TIMEOUT]
+                            [--hook HOOK] [--manifest MANIFEST] [-b BM_LIST]
+                            [--inherit-environ VAR_LIST] [-p PYTHON]
+
+options::
+
+  -h, --help            show this help message and exit
+  -o FILENAME, --output FILENAME
+                        Write the table to FILENAME (required)
+  --append              Add to an existing table rather than replacing it, so
+                        a suite can be built up a few benchmarks at a time
+  --min-time MIN_TIME   Minimum duration in seconds of a single value, the
+                        thing the loop counts are calibrated against. Must
+                        match what later runs use (default: 0.1)
+  -v, --verbose         Print more output
+  --affinity CPU_LIST   Specify CPU affinity for the calibration runs. Use the
+                        same value the benchmarks will be run with, since it
+                        affects how many loops fit in --min-time.
+  --timeout TIMEOUT     Specify a timeout in seconds for calibrating a single
+                        benchmark (default: disabled)
+  --hook HOOK           Apply the given pyperf hook(s) when calibrating each
+                        benchmark
+
+Example::
+
+  pyperformance loops_table -o loops.json --affinity 3
+  pyperformance run --loops-table loops.json --affinity 3 -o run1.json
+  pyperformance run --loops-table loops.json --affinity 3 -o run2.json
+
+The counts are keyed by the name each benchmark *function* reports, not by the
+pyperformance benchmark name. One benchmark may report several functions --
+``scimark`` reports five -- and they routinely want counts orders of magnitude
+apart, so each gets its own entry.
+
+A table describes the machine it was measured on, at the ``--min-time``,
+affinity and hooks it was measured with; the loop counts are only meaningful
+for runs made the same way. The table records the hostname, platform, Python
+version and ``min_time`` so a later run can check. Recalibrate when the machine
+or the interpreter changes.
+
+If a benchmark fails to calibrate, the table is still written with the counts
+that did work and the command exits non-zero, naming what is missing. Use
+``--append`` to fill in the gaps once the failures are fixed. Note that a
+benchmark missing from the table makes a later ``run --no-calibrate`` fail on
+it, which is the point of that option.
+
 
 show
 ----

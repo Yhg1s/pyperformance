@@ -67,14 +67,13 @@ def get_loops_from_file(filename):
     return loops
 
 
-def run_benchmarks(should_run, python, options):
-    if options.same_loops is not None:
-        loops = get_loops_from_file(options.same_loops)
-    else:
-        loops = {}
+def _setup_venvs(to_run, python, options):
+    """Prepare the venv each benchmark will run in.
 
-    to_run = sorted(should_run)
-
+    Returns {benchmark: (venv, runid)}. The venv is None for a benchmark whose
+    requirements would not install, which the caller reports as that
+    benchmark's failure rather than aborting the whole suite.
+    """
     info = _pythoninfo.get_info(python)
     runid = get_run_id(info)
 
@@ -124,6 +123,18 @@ def run_benchmarks(should_run, python, options):
         venvs.add(venv_root)
         benchmarks[bench] = (venv, bench_runid)
     print()
+
+    return benchmarks
+
+
+def run_benchmarks(should_run, python, options):
+    if options.same_loops is not None:
+        loops = get_loops_from_file(options.same_loops)
+    else:
+        loops = {}
+
+    to_run = sorted(should_run)
+    benchmarks = _setup_venvs(to_run, python, options)
 
     suite = None
     run_count = str(len(to_run))
@@ -194,6 +205,69 @@ def run_benchmarks(should_run, python, options):
     return (suite, errors)
 
 
+def calibrate_benchmarks(should_run, python, options):
+    """Calibrate benchmarks and return ({benchmark function: loops}, errors).
+
+    The keys are the names the benchmark functions report to pyperf, not the
+    pyperformance benchmark names: one benchmark may report several functions,
+    and --loops-table is looked up per function.
+    """
+    to_run = sorted(should_run)
+    benchmarks = _setup_venvs(to_run, python, options)
+
+    loops = {}
+    errors = []
+    run_count = str(len(to_run))
+    pyperf_opts = get_pyperf_calibrate_opts(options)
+
+    for index, bench in enumerate(to_run):
+        name = bench.name
+        print(
+            "[%s/%s] calibrating %s..."
+            % (str(index + 1).rjust(len(run_count)), run_count, name)
+        )
+        sys.stdout.flush()
+
+        bench_venv, bench_runid = benchmarks.get(bench)
+        if bench_venv is None:
+            print("ERROR: Benchmark %s failed: could not install requirements" % name)
+            errors.append((name, "Install requirements error"))
+            continue
+        try:
+            measured = bench.calibrate(
+                bench_venv.python,
+                bench_runid,
+                pyperf_opts,
+                venv=bench_venv,
+                verbose=options.verbose,
+            )
+        except TimeoutError as exc:
+            print("ERROR: Benchmark %s timed out" % name)
+            errors.append((name, exc))
+        except RuntimeError as exc:
+            print("ERROR: Benchmark %s failed: %s" % (name, exc))
+            traceback.print_exc()
+            errors.append((name, exc))
+        except Exception as exc:
+            print("ERROR: Benchmark %s failed: %s" % (name, exc))
+            traceback.print_exc()
+            errors.append((name, exc))
+        else:
+            if not measured:
+                # A table missing this benchmark makes a later --no-calibrate
+                # run fail, so silence here is a failure, not a warning.
+                print("ERROR: Benchmark %s reported no loop counts" % name)
+                errors.append((name, "no loop counts reported"))
+                continue
+            for func in sorted(measured):
+                print("    %-40s %s loops" % (func, measured[func]))
+            loops.update(measured)
+
+    print()
+
+    return (loops, errors)
+
+
 # Utility functions
 
 
@@ -219,6 +293,38 @@ def get_compatibility_id(bench=None):
     compat_id = compat_id[:12]
 
     return compat_id
+
+
+def get_pyperf_calibrate_opts(options):
+    """pyperf options for a calibration run.
+
+    Deliberately a much shorter list than get_pyperf_opts(): only what changes
+    the loop count a benchmark settles on, or what it needs in order to run at
+    all. Options that shape the reported measurement (--rigorous, --fast,
+    --values, --warmups, --track-memory) have nothing to shape here, because
+    --print-loops throws the measurement away.
+    """
+    opts = []
+
+    if options.verbose:
+        opts.append("--verbose")
+
+    # --min-time is the quantity the counts are calibrated against, so it is
+    # what makes a table valid for a later run; it gets recorded in the table.
+    opts.append("--min-time=%s" % options.min_time)
+    if options.affinity:
+        opts.append("--affinity=%s" % options.affinity)
+    if options.inherit_environ:
+        opts.append("--inherit-environ=%s" % ",".join(options.inherit_environ))
+    if options.timeout:
+        opts.append("--timeout=%s" % options.timeout)
+    if options.hook:
+        # Hooks change how fast the benchmark runs, so a table is only good for
+        # runs using the same ones.
+        for hook in options.hook:
+            opts.append("--hook=%s" % hook)
+
+    return opts
 
 
 def get_pyperf_opts(options):
