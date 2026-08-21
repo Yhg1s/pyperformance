@@ -12,6 +12,7 @@ from pyperformance.commands import (
     cmd_compile_all,
     cmd_list,
     cmd_list_groups,
+    cmd_loops_table,
     cmd_run,
     cmd_show,
     cmd_upload,
@@ -158,6 +159,59 @@ def parse_args():
         "--trust-venv",
         action="store_true",
         help="Trust that the venv is already correctly set up; skip pip install operations",
+    )
+    filter_opts(cmd)
+
+    # loops_table
+    cmd = subparsers.add_parser(
+        "loops_table",
+        help="Calibrate benchmarks once and record their loop counts, so that "
+        "later runs can reuse them with `run --loops-table` instead of "
+        "calibrating again",
+    )
+    cmds.append(cmd)
+    cmd.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        metavar="FILENAME",
+        help="Write the table to FILENAME",
+    )
+    cmd.add_argument(
+        "--append",
+        action="store_true",
+        help="Add to an existing table rather than replacing it, so a suite "
+        "can be built up a few benchmarks at a time",
+    )
+    cmd.add_argument(
+        "--min-time",
+        type=float,
+        default=0.1,
+        help="Minimum duration in seconds of a single value, the thing the "
+        "loop counts are calibrated against. Must match what later runs "
+        "use (default: 0.1)",
+    )
+    cmd.add_argument("-v", "--verbose", action="store_true", help="Print more output")
+    cmd.add_argument(
+        "--affinity",
+        metavar="CPU_LIST",
+        default=None,
+        help="Specify CPU affinity for the calibration runs. Use the same "
+        "value the benchmarks will be run with, since it affects how many "
+        "loops fit in --min-time.",
+    )
+    cmd.add_argument(
+        "--timeout",
+        help="Specify a timeout in seconds for calibrating a single "
+        "benchmark (default: disabled)",
+        type=check_positive,
+    )
+    cmd.add_argument(
+        "--hook",
+        action="append",
+        choices=hook_names,
+        metavar=f"{', '.join(x for x in hook_names if not x.startswith('_'))}",
+        help="Apply the given pyperf hook(s) when calibrating each benchmark",
     )
     filter_opts(cmd)
 
@@ -429,6 +483,9 @@ def _main():
     elif options.action == "run":
         benchmarks = _benchmarks_from_options(options)
         cmd_run(options, benchmarks)
+    elif options.action == "loops_table":
+        benchmarks = _benchmarks_from_options(options)
+        cmd_loops_table(options, benchmarks)
     elif options.action == "compare":
         cmd_compare(options)
     elif options.action == "list":

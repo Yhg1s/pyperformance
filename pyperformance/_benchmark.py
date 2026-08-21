@@ -201,6 +201,38 @@ class Benchmark:
 
         return bench
 
+    def calibrate(
+        self,
+        python,
+        runid=None,
+        pyperf_opts=None,
+        *,
+        venv=None,
+        verbose=False,
+    ):
+        """Calibrate this benchmark and return a {name: loops} mapping.
+
+        One script may report several benchmark functions, and they routinely
+        want counts orders of magnitude apart, so the counts are keyed by the
+        name each function reports rather than by script.
+        """
+        if venv and python == sys.executable:
+            python = venv.python
+
+        if not runid:
+            from .run import get_run_id
+
+            runid = get_run_id(python, self)
+
+        return _calibrate_perf_script(
+            python,
+            self.runscript,
+            runid,
+            extra_opts=self.extra_opts,
+            pyperf_opts=pyperf_opts,
+            verbose=verbose,
+        )
+
 
 #######################################
 # internal implementation
@@ -249,6 +281,76 @@ def _run_perf_script(
             else:
                 raise RuntimeError("Benchmark died")
         return pyperf.BenchmarkSuite.load(tmp)
+
+
+def _calibrate_perf_script(
+    python,
+    runscript,
+    runid,
+    *,
+    extra_opts=None,
+    pyperf_opts=None,
+    verbose=False,
+):
+    """Run a benchmark script in --print-loops mode and parse what it reports.
+
+    Deliberately not built on _run_perf_script(): that one writes results to a
+    file with --output, and --print-loops refuses to run alongside --output
+    because it produces loop counts rather than a benchmark result.
+    """
+    from pyperf._loops_table import LOOPS_MARKER
+
+    if not runscript:
+        raise ValueError("missing runscript")
+    if not isinstance(runscript, str):
+        raise TypeError(f"runscript must be a string, got {runscript!r}")
+
+    opts = [
+        *(extra_opts or ()),
+        *(pyperf_opts or ()),
+        # One process and one value: calibration only needs to reach min_time
+        # once, and every further value is time spent measuring something this
+        # mode throws away.
+        "--processes",
+        "1",
+        "--values",
+        "1",
+        "--print-loops",
+    ]
+    if pyperf_opts and "--copy-env" in pyperf_opts:
+        argv, env = _prep_cmd(python, runscript, opts, runid, lambda name: None)
+    else:
+        opts, inherit_envvar = _resolve_restricted_opts(opts)
+        argv, env = _prep_cmd(python, runscript, opts, runid, inherit_envvar)
+
+    # stdout carries the loop counts, so it has to be captured even though
+    # _run_perf_script() can let it through.
+    ec, stdout, stderr = _utils.run_cmd(argv, env=env, capture="both")
+    if ec != 0:
+        sys.stdout.write(stdout)
+        sys.stderr.flush()
+        sys.stderr.write(stderr)
+        sys.stderr.flush()
+        # pyperf returns exit code 124 if the benchmark execution times out
+        if ec == 124:
+            raise TimeoutError("Benchmark timed out")
+        else:
+            raise RuntimeError("Benchmark died")
+    if verbose and stderr:
+        sys.stderr.write(stderr)
+
+    loops = {}
+    for line in stdout.splitlines():
+        # Only the lines --print-loops wrote. A benchmark script may print
+        # whatever it likes, so unmarked lines are ignored rather than guessed
+        # at.
+        parts = line.split("\t")
+        if len(parts) != 3 or parts[0] != LOOPS_MARKER:
+            continue
+        name, count = parts[1], parts[2]
+        if name and count.isdigit() and int(count) > 0:
+            loops[name] = int(count)
+    return loops
 
 
 def _prep_cmd(python, script, opts, runid, on_set_envvar=None):
