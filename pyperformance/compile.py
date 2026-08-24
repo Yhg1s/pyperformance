@@ -399,7 +399,9 @@ class Python(Task):
     def install_performance(self):
         cmd = [self.program, "-u", "-m", "pip", "install"]
 
-        if pyperformance.is_dev():
+        if 1:
+            cmd.extend("pyperformance@git+https://github.com/Yhg1s/pyperformance@local-changes#egg=pyperformance")
+        elif pyperformance.is_dev():
             cmd.extend(["-e", os.path.dirname(pyperformance.PKG_ROOT)])
         else:
             version = pyperformance.__version__

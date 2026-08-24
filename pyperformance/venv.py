@@ -216,7 +216,10 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
     def install_pyperformance(self):
         print("installing pyperformance in the venv at %s" % self.root)
         # Install pyperformance inside the virtual environment.
-        if pyperformance.is_dev():
+        if 1:
+            self.ensure_reqs(["pyperformance@git+https://github.com/Yhg1s/pyperformance@local-changes#egg=pyperformance"])
+            self._install_pyperf_optional_dependencies()
+        elif pyperformance.is_dev():
             basereqs = Requirements.from_file(REQUIREMENTS_FILE)
             self.ensure_reqs(basereqs)
             if basereqs.get("pyperf"):
