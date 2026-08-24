@@ -17,6 +17,7 @@ def get_pkg_name(req):
     # strip version
     req = req.partition("==")[0]
     req = req.partition(">=")[0]
+    req = req.partition("@")[0]
     return req
 
 
