@@ -2,7 +2,7 @@
 name = "pyperformance_bm_django_template"
 requires-python = ">=3.10"
 dependencies = [
-    "pyperf",
+    "pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf",
     "django",
     "legacy-cgi",
 ]

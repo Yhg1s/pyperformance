@@ -2,7 +2,7 @@
 name = "pyperformance_bm_sphinx"
 requires-python = ">=3.11"
 dependencies = [
-    "pyperf",
+    "pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf",
     "sphinx",
 ]
 urls.repository = "https://github.com/python/pyperformance"

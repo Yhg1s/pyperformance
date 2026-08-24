@@ -2,7 +2,7 @@
 name = "pyperformance_bm_hg_startup"
 requires-python = ">=3.8"
 dependencies = [
-    "pyperf",
+    "pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf",
     "mercurial",
 ]
 urls = {repository = "https://github.com/python/pyperformance"}

@@ -2,7 +2,7 @@
 name = "pyperformance_bm_fastapi"
 requires-python = ">=3.10"
 dependencies = [
-    "pyperf",
+    "pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf",
     "fastapi",
     "uvicorn",
     "httpx",
