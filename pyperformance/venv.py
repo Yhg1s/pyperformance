@@ -256,13 +256,13 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
             requirements = Requirements.from_benchmarks([bench])
 
         # Every benchmark must depend on pyperf.
-        if bench is not None and not requirements.get("pyperf"):
-            basereqs = Requirements.from_file(REQUIREMENTS_FILE)
-            pyperf_req = basereqs.get("pyperf")
-            if not pyperf_req:
-                raise NotImplementedError
-            requirements.specs.append(pyperf_req)
-            # XXX what about psutil?
+        #if bench is not None and not requirements.get("pyperf"):
+        #    basereqs = Requirements.from_file(REQUIREMENTS_FILE)
+        #    pyperf_req = basereqs.get("pyperf")
+        #    if not pyperf_req:
+        #        raise NotImplementedError
+        #    requirements.specs.append(pyperf_req)
+        #    # XXX what about psutil?
 
         if not requirements:
             print("(nothing to install)")
