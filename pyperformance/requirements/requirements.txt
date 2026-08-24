@@ -10,5 +10,5 @@ psutil==7.0.0
     # via
     #   -r requirements.in
     #   pyperf
-  "pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf",
+pyperf@git+https://github.com/Yhg1s/pyperf@local-changes#egg=pyperf
     # via -r requirements.in
