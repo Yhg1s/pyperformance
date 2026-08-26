@@ -14,6 +14,10 @@ def get_pkg_name(req):
     """Return the name of the package in the given requirement text."""
     # strip env markers
     req = req.partition(";")[0]
+    # strip a PEP 508 direct reference ("name @ url"), which carries no version
+    # for the operators below to find. This has to come first: the URL may
+    # itself contain them, as a git ref does in "pkg@git+https://host/p@rev".
+    req = req.partition("@")[0].strip()
     # strip version
     req = req.partition("==")[0]
     req = req.partition(">=")[0]
