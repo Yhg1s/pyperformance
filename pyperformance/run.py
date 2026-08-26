@@ -62,6 +62,7 @@ def _setup_venvs(to_run, python, options):
 
     unique = getattr(options, "unique_venvs", False)
     trust_venv = getattr(options, "trust_venv", False)
+    local_deps = getattr(options, "local_deps", None)
     if not unique:
         common = VenvForBenchmarks.ensure(
             _venv.get_venv_root(runid.name, python=info),
@@ -69,6 +70,7 @@ def _setup_venvs(to_run, python, options):
             upgrade="oncreate" if not trust_venv else None,
             skip_pip=trust_venv,
             inherit_environ=options.inherit_environ,
+            local_deps=local_deps,
         )
 
     benchmarks = {}
@@ -106,6 +108,7 @@ def _setup_venvs(to_run, python, options):
                 upgrade="oncreate" if not trust_venv else None,
                 skip_pip=trust_venv,
                 inherit_environ=options.inherit_environ,
+                local_deps=local_deps,
             )
             if not trust_venv:
                 # XXX Do not override when there is a requirements collision.

@@ -4,7 +4,7 @@ import sys
 
 import pyperformance
 
-from . import _pip, _utils, _venv
+from . import _localdeps, _pip, _utils, _venv
 
 REQUIREMENTS_FILE = os.path.join(
     os.path.dirname(__file__), "requirements", "requirements.txt"
@@ -160,13 +160,16 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
         *,
         inherit_environ=None,
         upgrade=False,
+        local_deps=None,
     ):
         env = _get_envvars(inherit_environ)
         self = super().create(root, python, env=env, withpip=False)
         self.inherit_environ = inherit_environ
+        self.local_deps = local_deps
 
         try:
             self.ensure_pip(upgrade=upgrade)
+            self.sync_local_deps()
         except BaseException:
             _utils.safe_rmtree(self.root)
             raise
@@ -178,7 +181,15 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
 
     @classmethod
     def ensure(
-        cls, root, python=None, *, inherit_environ=None, upgrade=False, skip_pip=False, **kwargs
+        cls,
+        root,
+        python=None,
+        *,
+        inherit_environ=None,
+        upgrade=False,
+        skip_pip=False,
+        local_deps=None,
+        **kwargs,
     ):
         exists = _venv.venv_exists(root)
         if upgrade == "oncreate":
@@ -191,6 +202,7 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
         if exists:
             self = super().ensure(root)
             self.inherit_environ = inherit_environ
+            self.local_deps = local_deps
             if skip_pip:
                 # Trust that pip is already installed correctly
                 pass
@@ -198,15 +210,113 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
                 self.upgrade_pip()
             else:
                 self.ensure_pip(upgrade=False)
+            # Not gated on skip_pip: --trust-venv is about not reinstalling what
+            # an index would give back unchanged, and a local checkout is the
+            # one thing that can have changed since the venv was built. The
+            # marker keeps this free when it has not.
+            self.sync_local_deps()
             return self
         else:
             return cls.create(
-                root, python, inherit_environ=inherit_environ, upgrade=upgrade, **kwargs
+                root,
+                python,
+                inherit_environ=inherit_environ,
+                upgrade=upgrade,
+                local_deps=local_deps,
+                **kwargs,
             )
 
-    def __init__(self, root, *, base=None, inherit_environ=None):
+    def __init__(self, root, *, base=None, inherit_environ=None, local_deps=None):
         super().__init__(root, base=base)
         self.inherit_environ = inherit_environ or None
+        self.local_deps = local_deps
+
+    @property
+    def local_deps(self):
+        return self._local_deps
+
+    @local_deps.setter
+    def local_deps(self, value):
+        self._local_deps = tuple(value or ())
+        self.local_dep_names = frozenset(
+            dep.normalized_name for dep in self._local_deps
+        )
+
+    def sync_local_deps(self):
+        """Install any local dependency this venv does not already have.
+
+        Installing is skipped when the venv's marker file already records the
+        dependency at the same fingerprint. That is the whole point: pip
+        reinstalls a local path requirement unconditionally, and ensure_reqs()
+        runs once per benchmark, so without the marker a local pyperf would be
+        rebuilt once for every benchmark in the suite.
+        """
+        if not self.local_deps:
+            return ()
+
+        installed = _localdeps.read_marker(self.root)
+        stale = [
+            dep
+            for dep in self.local_deps
+            if installed.get(dep.normalized_name) != dep.fingerprint()
+        ]
+        if not stale:
+            print(
+                "local dependencies already installed in %s: %s"
+                % (self.root, ", ".join(dep.name for dep in self.local_deps))
+            )
+            return ()
+
+        for dep in stale:
+            kind = "editable" if dep.editable else "copy"
+            print(
+                "installing local dependency %s (%s) from %s into %s"
+                % (dep.name, kind, dep.path, self.root)
+            )
+            if dep.editable:
+                ec, _, _ = _pip.install_editable(
+                    dep.path,
+                    python=self.info,
+                    env=self._env,
+                )
+            else:
+                ec, _, _ = _pip.install_requirements(
+                    dep.path,
+                    python=self.python,
+                    env=self._env,
+                    upgrade=False,
+                )
+            if ec != 0:
+                raise _venv.RequirementsInstallationFailedError(dep.path)
+
+        _localdeps.update_marker(self.root, stale)
+        return tuple(stale)
+
+    def _drop_local_deps(self, requirements):
+        """Remove requirements that a local checkout already provides.
+
+        A benchmark's lockfile naming pyperf would otherwise have pip replace
+        the local checkout with a released version part-way through a run.
+        """
+        if not self.local_dep_names:
+            return requirements
+
+        def is_local(spec):
+            name = _localdeps.normalize_name(_pip.get_pkg_name(spec))
+            return name in self.local_dep_names
+
+        dropped = [spec for spec in requirements if is_local(spec)]
+        if not dropped:
+            return requirements
+        print(
+            "ignoring requirement(s) provided by a local checkout: %s"
+            % ", ".join(dropped)
+        )
+        kept = [spec for spec in requirements if not is_local(spec)]
+        if isinstance(requirements, Requirements):
+            requirements.specs = kept
+            return requirements
+        return kept
 
     @property
     def _env(self):
@@ -221,8 +331,12 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
             self._install_pyperf_optional_dependencies()
         elif pyperformance.is_dev():
             basereqs = Requirements.from_file(REQUIREMENTS_FILE)
+            has_pyperf = bool(basereqs.get("pyperf"))
+            # ensure_reqs() drops a locally-provided pyperf from basereqs, so
+            # ask before rather than after: pyperf still wants its optional
+            # dependencies whichever copy of it is installed.
             self.ensure_reqs(basereqs)
-            if basereqs.get("pyperf"):
+            if has_pyperf or "pyperf" in self.local_dep_names:
                 self._install_pyperf_optional_dependencies()
 
             root_dir = os.path.dirname(pyperformance.PKG_ROOT)
@@ -255,8 +369,16 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
             bench = requirements
             requirements = Requirements.from_benchmarks([bench])
 
+        # A local checkout of a requirement wins over whatever would otherwise
+        # be installed for it, including the injection just below.
+        requirements = self._drop_local_deps(requirements)
+
         # Every benchmark must depend on pyperf.
-        if bench is not None and not requirements.get("pyperf"):
+        if (
+            bench is not None
+            and "pyperf" not in self.local_dep_names
+            and not requirements.get("pyperf")
+        ):
             basereqs = Requirements.from_file(REQUIREMENTS_FILE)
             pyperf_req = basereqs.get("pyperf")
             if not pyperf_req:

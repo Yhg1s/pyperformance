@@ -55,6 +55,21 @@ def filter_opts(cmd, *, allow_no_benchmarks=False):
     cmd.set_defaults(allow_no_benchmarks=allow_no_benchmarks)
 
 
+def local_dep_opt(cmd):
+    cmd.add_argument(
+        "--local-dep",
+        action="append",
+        default=[],
+        metavar="NAME=PATH[:editable]",
+        dest="local_dep",
+        help="Install NAME into the benchmark virtual environment from the "
+        "checkout at PATH instead of from an index, so a change to it can be "
+        "tested without releasing or pushing one. Add ':editable' to install "
+        "it as a link, which makes later edits take effect without "
+        "reinstalling. May be given more than once.",
+    )
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="pyperformance",
@@ -160,6 +175,7 @@ def parse_args():
         action="store_true",
         help="Trust that the venv is already correctly set up; skip pip install operations",
     )
+    local_dep_opt(cmd)
     filter_opts(cmd)
 
     # loops_table
@@ -213,6 +229,7 @@ def parse_args():
         metavar=f"{', '.join(x for x in hook_names if not x.startswith('_'))}",
         help="Apply the given pyperf hook(s) when calibrating each benchmark",
     )
+    local_dep_opt(cmd)
     filter_opts(cmd)
 
     # show
@@ -362,6 +379,19 @@ def parse_args():
             )
             sys.exit(1)
         options.python = abs_python
+
+    if getattr(options, "local_dep", None):
+        from pyperformance import _localdeps
+
+        try:
+            options.local_deps = _localdeps.parse_args(options.local_dep)
+        except ValueError as exc:
+            # Fail here rather than part-way through building venvs: a typo in
+            # a path is otherwise only noticed once pip has been asked to
+            # install it, by which point a suite may already be running.
+            parser.error(f"--local-dep: {exc}")
+    else:
+        options.local_deps = ()
 
     if hasattr(options, "benchmarks"):
         if options.benchmarks == "<NONE>":
