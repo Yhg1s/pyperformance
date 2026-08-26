@@ -7,6 +7,12 @@ import types
 
 from . import _pip, _pythoninfo, _utils
 
+# Where the per-Python benchmark venvs go, unless --venvs-dir says otherwise.
+# Somewhere other than the default is worth having when the caller keeps its own
+# virtual environment at ./venv: the benchmark venvs would then be nested inside
+# it, and rebuilding the outer one would take them with it.
+DEFAULT_VENVS_DIR = "venv"
+
 
 class VenvCreationFailedError(Exception):
     def __init__(self, root, exitcode, already_existed):
@@ -83,8 +89,15 @@ def resolve_venv_python(root):
         return os.path.join(root, "bin", python_exe)
 
 
-def get_venv_root(name=None, venvsdir="venv", *, python=sys.executable):
-    """Return the venv root to use for the given name (or given python)."""
+def get_venv_root(name=None, venvsdir=None, *, python=sys.executable):
+    """Return the venv root to use for the given name (or given python).
+
+    `venvsdir` is the directory the per-Python venvs live in, relative to the
+    working directory unless absolute. The empty string means the working
+    directory itself.
+    """
+    if venvsdir is None:
+        venvsdir = DEFAULT_VENVS_DIR
     if not name:
         from .run import get_run_id
 

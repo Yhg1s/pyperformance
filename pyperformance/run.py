@@ -63,9 +63,10 @@ def _setup_venvs(to_run, python, options):
     unique = getattr(options, "unique_venvs", False)
     trust_venv = getattr(options, "trust_venv", False)
     local_deps = getattr(options, "local_deps", None)
+    venvs_dir = getattr(options, "venvs_dir", None)
     if not unique:
         common = VenvForBenchmarks.ensure(
-            _venv.get_venv_root(runid.name, python=info),
+            _venv.get_venv_root(runid.name, venvs_dir, python=info),
             info,
             upgrade="oncreate" if not trust_venv else None,
             skip_pip=trust_venv,
@@ -79,7 +80,7 @@ def _setup_venvs(to_run, python, options):
         bench_runid = runid._replace(bench=bench)
         assert bench_runid.name, (bench, bench_runid)
         name = bench_runid.name
-        venv_root = _venv.get_venv_root(name, python=info)
+        venv_root = _venv.get_venv_root(name, venvs_dir, python=info)
         print()
         print("=" * 50)
         if trust_venv:

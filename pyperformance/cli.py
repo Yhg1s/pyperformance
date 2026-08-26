@@ -5,7 +5,7 @@ import sys
 
 from pyperf import _hooks
 
-from pyperformance import __version__, _utils, is_dev, is_installed
+from pyperformance import __version__, _utils, _venv, is_dev, is_installed
 from pyperformance.commands import (
     cmd_compare,
     cmd_compile,
@@ -67,6 +67,21 @@ def local_dep_opt(cmd):
         "tested without releasing or pushing one. Add ':editable' to install "
         "it as a link, which makes later edits take effect without "
         "reinstalling. May be given more than once.",
+    )
+
+
+def venvs_dir_opt(cmd):
+    cmd.add_argument(
+        "--venvs-dir",
+        metavar="DIR",
+        default=None,
+        dest="venvs_dir",
+        help="Directory to keep the per-Python benchmark virtual environments "
+        f"in (default: {_venv.DEFAULT_VENVS_DIR!r}, relative to the working "
+        "directory). Worth pointing elsewhere when the caller keeps its own "
+        "virtual environment at the default location, since the benchmark "
+        "venvs would otherwise be nested inside it and be lost whenever it is "
+        "rebuilt.",
     )
 
 
@@ -176,6 +191,7 @@ def parse_args():
         help="Trust that the venv is already correctly set up; skip pip install operations",
     )
     local_dep_opt(cmd)
+    venvs_dir_opt(cmd)
     filter_opts(cmd)
 
     # loops_table
@@ -230,6 +246,7 @@ def parse_args():
         help="Apply the given pyperf hook(s) when calibrating each benchmark",
     )
     local_dep_opt(cmd)
+    venvs_dir_opt(cmd)
     filter_opts(cmd)
 
     # show
@@ -322,6 +339,7 @@ def parse_args():
     # venv
     venv_common = argparse.ArgumentParser(add_help=False)
     venv_common.add_argument("--venv", help="Path to the virtual environment")
+    venvs_dir_opt(venv_common)
     cmd = subparsers.add_parser(
         "venv", parents=[venv_common], help="Actions on the virtual environment"
     )
@@ -474,11 +492,11 @@ def _main():
     parser, options = parse_args()
 
     if options.action == "venv":
-        from . import _pythoninfo, _venv
+        from . import _pythoninfo
 
         if not options.venv:
             info = _pythoninfo.get_info(options.python)
-            root = _venv.get_venv_root(python=info)
+            root = _venv.get_venv_root(python=info, venvsdir=options.venvs_dir)
         else:
             root = options.venv
             info = None
